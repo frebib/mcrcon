@@ -744,10 +744,18 @@ int run_terminal_mode(int rsock)
 	int ret = 0;
 	char command[DATA_BUFFSIZE] = {0x00};
 
-	puts("Logged in. Type \"Q\" to quit!");
+	FILE *input = stdin;
+	int print_prompt = isatty(fileno(input));
+
+	if (print_prompt) {
+		fputs("Logged in. Type \"Q\" to quit!\n", stdout);
+	}
 
 	while (connection_alive)
 	{
+		if (print_prompt)
+			fputs("> ", stdout);
+
 		int len = get_line(command, DATA_BUFFSIZE);
 		if(command[0] == 'Q' && command[1] == 0)
 			break;
@@ -766,7 +774,6 @@ int get_line(char *buffer, int bsize)
 {
 	int ch, len;
 
-	fputs(">", stdout);
 	(void) fgets(buffer, bsize, stdin);
 
 	if (buffer[0] == 0)
