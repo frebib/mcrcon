@@ -31,19 +31,19 @@
 #include <unistd.h>
 
 #ifdef _WIN32
-    // for name resolving on windows
-    // enable this if you get compiler whine about getaddrinfo on windows
-    //#define _WIN32_WINNT 0x0501
+// for name resolving on windows
+// enable this if you get compiler whine about getaddrinfo on windows
+//#define _WIN32_WINNT 0x0501
 
-    #include <ws2tcpip.h>
-    #include <winsock2.h>
-    #include <windows.h>
+#include <ws2tcpip.h>
+#include <winsock2.h>
+#include <windows.h>
 #else
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #endif
 
 #define VERSION "0.6.0"
@@ -56,24 +56,24 @@
 
 #define RCON_EXEC_COMMAND       2
 #define RCON_AUTHENTICATE       3
-#define RCON_RESPONSEVALUE      0
+#define RCON_RESPONSE_VALUE     0
 #define RCON_AUTH_RESPONSE      2
 #define RCON_PID                0xBADC0DE
 
 // a bit too big perhaps?
-#define DATA_BUFFSIZE 10240
+#define DATA_BUFFSIZE 4096
 
 // rcon packet structure
 typedef struct _rc_packet {
-    int size;
-    int id;
-    int cmd;
-    char data[DATA_BUFFSIZE];
-    // ignoring string2 atm.
+	int size;
+	int id;
+	int cmd;
+	char data[DATA_BUFFSIZE];
+	// ignoring string2 atm.
 } rc_packet;
 
 // ===================================
-//  FUNCTION DEFINITIONS              
+//  FUNCTION DEFINITIONS
 // ===================================
 
 // endianness related functions
@@ -82,9 +82,9 @@ int32_t reverse_int32(int32_t n);
 
 // Network related functions
 #ifdef _WIN32
-void		net_init_WSA(void);
+void	net_init_WSA(void);
 #endif
-void		net_close(int sd);
+void	net_close(int sd);
 int		net_connect(const char *host, const char *port);
 int		net_send(int sd, const uint8_t *buffer, size_t size);
 int		net_send_packet(int sd, rc_packet *packet);
@@ -119,28 +119,25 @@ static int connection_alive = 1;
 static int rsock;
 
 #ifdef _WIN32
-  // console coloring on windows
-  HANDLE console_handle;
+// console coloring on windows
+HANDLE console_handle;
 #endif
 
 // safety stuff (windows is still misbehaving)
-void exit_proc(void)
-{
+void exit_proc(void) {
 	if (rsock != -1)
 		net_close(rsock);
 }
 
 // Check windows & linux behaviour !!!
-void sighandler(/*int sig*/)
-{
+void sighandler(/*int sig*/) {
 	connection_alive = 0;
-	#ifndef _WIN32
-		exit(EXIT_SUCCESS);
-	#endif
+#ifndef _WIN32
+	exit(EXIT_SUCCESS);
+#endif
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	int opt;
 	int ret = EXIT_SUCCESS;
 	int terminal_mode = 0;
@@ -148,7 +145,7 @@ int main(int argc, char *argv[])
 	char *host = getenv("MCRCON_HOST");
 	char *pass = getenv("MCRCON_PASS");
 	char *port = getenv("MCRCON_PORT");
-	
+
 	if (!port)
 		port = "25575";
 
@@ -160,10 +157,8 @@ int main(int argc, char *argv[])
 	// default getopt error handler enabled
 	opterr = 1;
 
-	while ((opt = getopt(argc, argv, "vrtcshH:p:P:i")) != -1)
-	{
-		switch (opt)
-		{
+	while ((opt = getopt(argc, argv, "vrtcshH:p:P:i")) != -1) {
+		switch (opt) {
 			case 'H': host = optarg;	break;
 			case 'P': port = optarg;	break;
 			case 'p': pass = optarg;	break;
@@ -180,11 +175,6 @@ int main(int argc, char *argv[])
 				puts(VER_STR"\nhttps://github.com/Tiiffi/mcrcon");
 				return EXIT_SUCCESS;
 			case 'h':
-			/*
-			  if(optopt == 'P' || optopt == 'H' || optopt == 'p')
-		    	  fprintf (stderr, "Option -%c requires an argument.\n\n", optopt);
-			  else fprintf (stderr, "Unknown option -%c\n\n", optopt);
-			*/
 			case '?':
 				usage(stderr);
 				return EXIT_FAILURE;
@@ -193,18 +183,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (host == NULL)
-	{
-		fputs("Host not defined (-H flag). Try 'mcrcon -h' or 'man mcrcon' for more information.\n\n", stderr);
+	if (host == NULL) {
+		fputs("Host not defined (-H flag). Try '"IN_NAME" -h' or 'man "IN_NAME"' for more information.\n\n", stderr);
 		return EXIT_ARG_FAILURE;
 	}
-
-	if (pass == NULL)
-	{
-		fputs("Password not defined (-p flag). Try 'mcrcon -h' 'man mcrcon' for more information.\n\n", stderr);
+	if (pass == NULL) {
+		fputs("Password not defined (-p flag). Try '"IN_NAME" -h' 'man "IN_NAME"' for more information.\n\n", stderr);
 		return EXIT_ARG_FAILURE;
 	}
-
 	if(optind == argc && terminal_mode == 0)
 		terminal_mode = 1;
 
@@ -215,24 +201,23 @@ int main(int argc, char *argv[])
 	signal(SIGTERM, &sighandler);
 	signal(SIGINT, &sighandler);
 
-	#ifdef _WIN32
-	    net_init_WSA();
-	    console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	    if (console_handle == INVALID_HANDLE_VALUE) console_handle = NULL;
-	#endif
+#ifdef _WIN32
+	net_init_WSA();
+	console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (console_handle == INVALID_HANDLE_VALUE) console_handle = NULL;
+#endif
 
 	// open socket
 	rsock = net_connect(host, port);
 
 	// auth & commands
-	if (rcon_auth(rsock, pass))
-	{
+	if (rcon_auth(rsock, pass)) {
 		if (terminal_mode)
 			run_terminal_mode(rsock);
 		else
 			run_commands(argc, argv);
-	}
-	else { // auth failed
+	} else {
+		// auth failed
 		fprintf(stderr, "Authentication failed!\n");
 		ret = EXIT_AUTH_FAILURE;
 	}
@@ -243,42 +228,40 @@ int main(int argc, char *argv[])
 	return ret;
 }
 
-void usage(FILE *file)
-{
+void usage(FILE *file) {
 	fputs(
-		"Usage: "IN_NAME" [OPTIONS]... [COMMANDS]...\n\n"
-		"Sends rcon commands to Minecraft server.\n\n"
-		"Option:\n"
-		"  -h\t\tPrint usage\n"
-		"  -H\t\tServer address\n"
-		"  -P\t\tPort (default is 25575)\n"
-		"  -p\t\tRcon password\n"
-		"  -t\t\tInteractive terminal mode\n"
-		"  -s\t\tSilent mode (do not print received packets)\n"
-		"  -c\t\tDisable colors\n"
-		"  -r\t\tOutput raw packets (debugging and custom handling)\n"
-		"  -v\t\tOutput version information\n\n"
-		"Server address, port and password can be set using following environment variables:\n"
-		"  MCRCON_HOST\n"
-		"  MCRCON_PORT\n"
-		"  MCRCON_PASS\n\n"
-		, file
-	);
+			"Usage: "IN_NAME" [OPTIONS]... [COMMANDS]...\n\n"
+			"Sends rcon commands to Minecraft server.\n\n"
+			"Option:\n"
+			"  -h\t\tPrint usage\n"
+			"  -H\t\tServer address\n"
+			"  -P\t\tPort (default is 25575)\n"
+			"  -p\t\tRcon password\n"
+			"  -t\t\tInteractive terminal mode\n"
+			"  -s\t\tSilent mode (do not print received packets)\n"
+			"  -c\t\tDisable colors\n"
+			"  -r\t\tOutput raw packets (debugging and custom handling)\n"
+			"  -v\t\tOutput version information\n\n"
+			"Server address, port and password can be set using following environment variables:\n"
+			"  MCRCON_HOST\n"
+			"  MCRCON_PORT\n"
+			"  MCRCON_PASS\n\n"
+			, file
+		 );
 
 	fputs("Command-line options will override environment variables.", file);
 	fputs("Rcon commands with arguments must be enclosed in quotes.\n", file);
 	fputs("Example:\n\t"IN_NAME" -H my.minecraft.server -p password \"say Server is restarting!\" save-all stop\n", file);
 	fputs(VER_STR"\nReport bugs to tiiffi_at_gmail_dot_com or https://github.com/Tiiffi/mcrcon/issues/\n", file);
 
-	#ifdef _WIN32
-	    fputs("Press enter to exit.", file);
-	    getchar();
-	#endif
+#ifdef _WIN32
+	fputs("Press enter to exit.", file);
+	getchar();
+#endif
 }
 
 #ifdef _WIN32
-void net_init_WSA(void)
-{
+void net_init_WSA(void) {
 	WSADATA wsadata;
 
 	// Request winsock 2.2 for now.
@@ -286,8 +269,7 @@ void net_init_WSA(void)
 	WORD version = MAKEWORD(2, 2);
 
 	int err = WSAStartup(version, &wsadata);
-	if (err != 0)
-	{
+	if (err != 0) {
 		fprintf(stderr, "WSAStartup failed. Error: %d.\n", err);
 		exit(EXIT_FAILURE);
 	}
@@ -295,8 +277,7 @@ void net_init_WSA(void)
 #endif
 
 // socket close and cleanup
-void net_close(int sd)
-{
+void net_close(int sd) {
 #ifdef _WIN32
 	closesocket(sd);
 	WSACleanup();
@@ -308,8 +289,7 @@ void net_close(int sd)
 // Opens and connects socket
 // http://man7.org/linux/man-pages/man3/getaddrinfo.3.html
 // https://bugs.chromium.org/p/chromium/issues/detail?id=44489
-int net_connect(const char *host, const char *port)
-{
+int net_connect(const char *host, const char *port) {
 	int sd;
 
 	struct addrinfo hints;
@@ -320,32 +300,29 @@ int net_connect(const char *host, const char *port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	#ifdef _WIN32
-	  net_init_WSA();
-	#endif
+#ifdef _WIN32
+	net_init_WSA();
+#endif
 
 	int ret = getaddrinfo(host, port, &hints, &server_info);
-	if (ret != 0)
-	{
+	if (ret != 0) {
 		fprintf(stderr, "Name resolution failed.\n");
-		#ifdef _WIN32
-			fprintf(stderr, "Error %d: %s", ret, gai_strerror(ret));
-		#else
-			fprintf(stderr, "Error %d: %s\n", ret, gai_strerror(ret));
-		#endif
+#ifdef _WIN32
+		fprintf(stderr, "Error %d: %s", ret, gai_strerror(ret));
+#else
+		fprintf(stderr, "Error %d: %s\n", ret, gai_strerror(ret));
+#endif
 		exit(EXIT_FAILURE);
 	}
 
 	// Go through the hosts and try to connect
-	for (p = server_info; p != NULL; p = p->ai_next)
-	{
+	for (p = server_info; p != NULL; p = p->ai_next) {
 		sd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 		if (sd == -1)
 			continue;
 
 		ret = connect(sd, p->ai_addr, p->ai_addrlen);
-		if (ret == -1)
-		{
+		if (ret == -1) {
 			net_close(sd);
 			continue;
 		}
@@ -353,13 +330,12 @@ int net_connect(const char *host, const char *port)
 		break;
 	}
 
-	if (p == NULL)
-	{
+	if (p == NULL) {
 		/* TODO (Tiiffi): Check why windows does not report errors */
 		fprintf(stderr, "Connection failed.\n");
-		#ifndef _WIN32
-			fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
-		#endif
+#ifndef _WIN32
+		fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
+#endif
 		freeaddrinfo(server_info);
 		exit(EXIT_FAILURE);
 	}
@@ -369,13 +345,11 @@ int net_connect(const char *host, const char *port)
 	return sd;
 }
 
-int net_send(int sd, const uint8_t *buff, size_t size)
-{
+int net_send(int sd, const uint8_t *buff, size_t size) {
 	size_t sent = 0;
 	size_t left = size;
 
-	while (sent < size)
-	{
+	while (sent < size) {
 		int result = send(sd, (const char *) buff + sent, left, 0);
 
 		if (result == -1) return -1;
@@ -387,17 +361,15 @@ int net_send(int sd, const uint8_t *buff, size_t size)
 	return 0;
 }
 
-int net_send_packet(int sd, rc_packet *packet)
-{
+int net_send_packet(int sd, rc_packet *packet) {
 	int len;
 	int total = 0;	// bytes we've sent
-	int bytesleft;	// bytes left to send 
+	int bytesleft;	// bytes left to send
 	int ret = -1;
 
 	bytesleft = len = packet->size + sizeof(int);
 
-	while(total < len)
-	{
+	while(total < len) {
 		ret = send(sd, (char *) packet + total, bytesleft, 0);
 		if(ret == -1) { break; }
 		total += ret;
@@ -407,8 +379,7 @@ int net_send_packet(int sd, rc_packet *packet)
 	return ret == -1 ? -1 : 1;
 }
 
-rc_packet *net_recv_packet(int sd)
-{
+rc_packet *net_recv_packet(int sd) {
 	int psize;
 	static rc_packet packet = {0, 0, 0, { 0x00 }};
 
@@ -416,22 +387,19 @@ rc_packet *net_recv_packet(int sd)
 
 	int ret = recv(sd, (char *) &psize, sizeof(int), 0);
 
-	if (ret == 0)
-	{
+	if (ret == 0) {
 		fprintf(stderr, "Connection lost.\n");
 		connection_alive = 0;
 		return NULL;
 	}
 
-	if (ret != sizeof(int))
-	{
-		fprintf(stderr, "Error: recv() failed. Invalid packet size (%d).\n", ret);
+	if (ret != sizeof(int)) {
+		fprintf(stderr, "recv: %s\n", strerror(errno));
 		connection_alive = 0;
 		return NULL;
 	}
 
-	if (psize < 10 || psize > DATA_BUFFSIZE)
-	{
+	if (psize < 10 || psize > DATA_BUFFSIZE) {
 		fprintf(stderr, "Warning: invalid packet size (%d). Must over 10 and less than %d.\n", psize, DATA_BUFFSIZE);
 
 		if(psize > DATA_BUFFSIZE  || psize < 0) psize = DATA_BUFFSIZE;
@@ -443,15 +411,13 @@ rc_packet *net_recv_packet(int sd)
 	packet.size = psize;
 
 	ret = recv(sd, (char *) &packet + sizeof(int), psize, 0);
-	if (ret == 0)
-	{
+	if (ret == 0) {
 		fprintf(stderr, "Connection lost.\n");
 		connection_alive = 0;
 		return NULL;
 	}
 
-	if(ret != psize)
-	{
+	if(ret != psize) {
 		fprintf(stderr, "Warning: recv() return value (%d) does not match expected packet size (%d).\n", ret, psize);
 		net_clean_incoming(sd, DATA_BUFFSIZE); /* Should be enough. Needs some checking */
 		return NULL;
@@ -460,14 +426,12 @@ rc_packet *net_recv_packet(int sd)
 	return &packet;
 }
 
-int net_clean_incoming(int sd, int size)
-{
+int net_clean_incoming(int sd, int size) {
 	char tmp[size];
 
 	int ret = recv(sd, tmp, size, 0);
 
-	if(ret == 0)
-	{
+	if(ret == 0) {
 		fprintf(stderr, "Connection lost.\n");
 		connection_alive = 0;
 	}
@@ -475,12 +439,10 @@ int net_clean_incoming(int sd, int size)
 	return ret;
 }
 
-void print_color(int color)
-{
+void print_color(int color) {
 	// sh compatible color array
-	#ifndef _WIN32
-	char *colors[] =
-	{
+#ifndef _WIN32
+	char *colors[] = {
 		"\033[0;30m", /* 00 BLACK    0x30 */
 		"\033[0;34m", /* 01 BLUE     0x31 */
 		"\033[0;32m", /* 02 GREEN    0x32 */
@@ -499,81 +461,78 @@ void print_color(int color)
 		"\033[1;37m", /* 15 WHITE    0x66 */
 	};
 
-	if(color == 0)
-	{
+	if(color == 0) {
 		fputs("\033[0m", stdout); /* CANCEL COLOR */
 	}
-	else
-	#endif
-	{
-		if(color >= 0x61 && color <= 0x66) color -= 0x57;
-		else if(color >= 0x30 && color <= 0x39) color -= 0x30;
-		else return;
+	else {
+#endif
+		if(color >= 0x61 && color <= 0x66)
+			color -= 0x57;
+		else if(color >= 0x30 && color <= 0x39)
+			color -= 0x30;
+		else
+			return;
 
-		#ifndef _WIN32
-		  fputs(colors[color], stdout);
-		#else
-		  SetConsoleTextAttribute(console_handle, color);
-		#endif
+#ifndef _WIN32
+		fputs(colors[color], stdout);
 	}
+#else
+	SetConsoleTextAttribute(console_handle, color);
+#endif
 }
 
 // this hacky mess might use some optimizing
-void packet_print(rc_packet *packet)
-{
-	if (raw_output == 1)
-	{
-		for (int i = 0; packet->data[i] != 0; ++i) putchar(packet->data[i]);
+void packet_print(rc_packet *packet) {
+	if (raw_output == 1) {
+		for (int i = 0; packet->data[i] != 0; ++i)
+			putchar(packet->data[i]);
+		putchar(0);
 		return;
 	}
 
 	int i;
 	int def_color = 0;
 
-	#ifdef _WIN32
+#ifdef _WIN32
 	CONSOLE_SCREEN_BUFFER_INFO console_info;
 
 	if (GetConsoleScreenBufferInfo(console_handle, &console_info) != 0)
 		def_color = console_info.wAttributes + 0x30;
 	else
 		def_color = 0x37;
-	#endif
+#endif
 
 	// colors enabled so try to handle the bukkit colors for terminal
-	if (print_colors == 1)
-	{
-	
-		for (i = 0; (unsigned char) packet->data[i] != 0; ++i)
-		{
+	if (print_colors == 1) {
+
+		for (i = 0; (unsigned char) packet->data[i] != 0; ++i) {
 			if ((unsigned char) packet->data[i] == 0xc2)
 				continue;
 
-			if ((unsigned char) packet->data[i] == 0xa7)
-			{
+			if ((unsigned char) packet->data[i] == 0xa7) {
 				++i;
 				print_color(packet->data[i]);
 				continue;
 			}
 			if (packet->data[i] == 0x0A) print_color(def_color);
-			
+
 			putchar(packet->data[i]);
 		}
 		print_color(def_color); // cancel coloring
 	}
 	// strip colors
-	else
-	{
-		for (i = 0; (unsigned char) packet->data[i] != 0; ++i)
-		{
+	else {
+		for (i = 0; (unsigned char) packet->data[i] != 0; ++i) {
+			// Fix for https://github.com/Tiiffi/mcrcon/issues/2
 			if ((unsigned char) packet->data[i] == 0xc2)
 				continue;
 
-			if ((unsigned char) packet->data[i] == 0xa7)
-			{
+			// Colour escape code §
+			if ((unsigned char) packet->data[i] == 0xa7) {
 				++i;
 				continue;
 			}
-			
+
 			putchar(packet->data[i]);
 		}
 	}
@@ -583,14 +542,12 @@ void packet_print(rc_packet *packet)
 		putchar('\n');
 }
 
-rc_packet *packet_build(int id, int cmd, char *s1)
-{
+rc_packet *packet_build(int id, int cmd, char *s1) {
 	static rc_packet packet = {0, 0, 0, { 0x00 }};
 
 	// size + id + cmd + s1 + s2 NULL terminator
 	int s1_len = strlen(s1);
-	if (s1_len > DATA_BUFFSIZE)
-	{
+	if (s1_len > DATA_BUFFSIZE) {
 		fprintf(stderr, "Warning: Command string too long (%d). Maximum allowed: %d.\n", s1_len, DATA_BUFFSIZE);
 		return NULL;
 	}
@@ -604,8 +561,7 @@ rc_packet *packet_build(int id, int cmd, char *s1)
 }
 
 // TODO(Tiiffi): String length limit?
-uint8_t *packet_build_malloc(size_t *size, int32_t id, int32_t cmd, char *string)
-{
+uint8_t *packet_build_malloc(size_t *size, int32_t id, int32_t cmd, char *string) {
 	size_t string_length = strlen(string);
 
 	*size = 3 * sizeof(int32_t) + string_length + 2;
@@ -631,26 +587,23 @@ uint8_t *packet_build_malloc(size_t *size, int32_t id, int32_t cmd, char *string
 #define MAX_STRING_SIZE  (size_t) (MAX_PACKET_SIZE - 2 - 3 * sizeof(int32_t))
 #define SIZEOF_PACKET(x) (size_t) (x.size + sizeof(int32_t))
 
-struct rcon_packet
-{
+struct rcon_packet {
 	int32_t size;
 	int32_t id;
 	int32_t cmd;
 	uint8_t data[MAX_STRING_SIZE];
 };
 
-struct rcon_packet packet_build_new(int32_t id, int32_t cmd, char *string)
-{
+struct rcon_packet packet_build_new(int32_t id, int32_t cmd, char *string) {
 	struct rcon_packet packet;
 	size_t string_length = strlen(string);
 
-	if (string_length > MAX_STRING_SIZE)
-	{
+	if (string_length > MAX_STRING_SIZE) {
 		string_length = MAX_STRING_SIZE;
 		fprintf(stderr,
-			"Warning: command string is too long. Truncating to "
-			"%u characters.\n", (unsigned) MAX_STRING_SIZE
-		);
+				"Warning: command string is too long. Truncating to "
+				"%u characters.\n", (unsigned) MAX_STRING_SIZE
+			   );
 	}
 
 	packet.size = 2 * sizeof(int32_t) + string_length + 2;
@@ -663,8 +616,7 @@ struct rcon_packet packet_build_new(int32_t id, int32_t cmd, char *string)
 	return packet;
 }
 
-int rcon_auth(int rsock, char *passwd)
-{
+int rcon_auth(int rsock, char *passwd) {
 	int ret;
 
 	rc_packet *packet = packet_build(RCON_PID, RCON_AUTHENTICATE, passwd);
@@ -683,14 +635,12 @@ int rcon_auth(int rsock, char *passwd)
 	return packet->id == -1 ? 0 : 1;
 }
 
-int rcon_command(int rsock, char *command)
-{
+int rcon_command(int rsock, char *command) {
 	int ret; (void) ret;
 
 	size_t size;
 	uint8_t *p = packet_build_malloc(&size, RCON_PID, RCON_EXEC_COMMAND, command);
-	if (p == NULL)
-	{
+	if (p == NULL) {
 		connection_alive = 0;
 		return 0;
 	}
@@ -710,14 +660,13 @@ int rcon_command(int rsock, char *command)
 	if (packet->id != RCON_PID)
 		return 0;
 
-	if (!silent_mode)
-	{
-	/*
-	if(packet->size == 10) {
-	    printf("Unknown command \"%s\". Type \"help\" or \"?\" for help.\n", command);
-	}
-	else
-	*/
+	if (!silent_mode) {
+		/*
+		   if(packet->size == 10) {
+		   printf("Unknown command \"%s\". Type \"help\" or \"?\" for help.\n", command);
+		   }
+		   else
+		   */
 		if (packet->size > 10)
 			packet_print(packet);
 	}
@@ -725,12 +674,10 @@ int rcon_command(int rsock, char *command)
 	return 1;
 }
 
-int run_commands(int argc, char *argv[])
-{
+int run_commands(int argc, char *argv[]) {
 	int i, ok = 1, ret = 0;
 
-	for (i = optind; i < argc && ok; i++)
-	{
+	for (i = optind; i < argc && ok; i++) {
 		ok = rcon_command(rsock, argv[i]);
 		ret += ok;
 	}
@@ -739,8 +686,7 @@ int run_commands(int argc, char *argv[])
 }
 
 // interactive terminal mode
-int run_terminal_mode(int rsock)
-{
+int run_terminal_mode(int rsock) {
 	int ret = 0;
 	char command[DATA_BUFFSIZE] = {0x00};
 
@@ -751,8 +697,7 @@ int run_terminal_mode(int rsock)
 		fputs("Logged in. Type \"Q\" to quit!\n", stdout);
 	}
 
-	while (connection_alive)
-	{
+	while (connection_alive) {
 		// Raw output doesn't print newlines but they are still
 		// required when using interactive mode
 		if (raw_output)
@@ -775,8 +720,7 @@ int run_terminal_mode(int rsock)
 }
 
 // gets line from stdin and deals with rubbish left in the input buffer
-int get_line(char *buffer, int bsize)
-{
+int get_line(char *buffer, int bsize) {
 	int ch, len;
 
 	(void) fgets(buffer, bsize, stdin);
@@ -789,7 +733,7 @@ int get_line(char *buffer, int bsize)
 
 	len = strlen(buffer);
 
-	// clean input buffer if needed 
+	// clean input buffer if needed
 	if (len == bsize - 1)
 		while ((ch = getchar()) != '\n' && ch != EOF);
 
@@ -797,15 +741,14 @@ int get_line(char *buffer, int bsize)
 }
 
 // http://www.ibm.com/developerworks/aix/library/au-endianc/
-bool is_bigendian(void)
-{
+bool is_bigendian(void) {
 	const int32_t n = 1;
-	if (*(uint8_t *) &n == 0 ) return true;
+	if (*(uint8_t *) &n == 0)
+		return true;
 	return false;
 }
 
-int32_t reverse_int32(int32_t n)
-{
+int32_t reverse_int32(int32_t n) {
 	int32_t tmp;
 	uint8_t *t = (uint8_t *) &tmp;
 	uint8_t *p = (uint8_t *) &n;
