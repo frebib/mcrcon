@@ -753,6 +753,11 @@ int run_terminal_mode(int rsock)
 
 	while (connection_alive)
 	{
+		// Raw output doesn't print newlines but they are still
+		// required when using interactive mode
+		if (raw_output)
+			fputs("\n", stdout);
+
 		if (print_prompt)
 			fputs("> ", stdout);
 
