@@ -50,6 +50,10 @@
 #define IN_NAME "mcrcon"
 #define VER_STR IN_NAME" "VERSION" (built: "__DATE__" "__TIME__")"
 
+// Fixed exit codes
+#define EXIT_ARG_FAILURE        2
+#define EXIT_AUTH_FAILURE       5
+
 #define RCON_EXEC_COMMAND       2
 #define RCON_AUTHENTICATE       3
 #define RCON_RESPONSEVALUE      0
@@ -131,13 +135,14 @@ void sighandler(/*int sig*/)
 {
 	connection_alive = 0;
 	#ifndef _WIN32
-	    exit(EXIT_SUCCESS);
+		exit(EXIT_SUCCESS);
 	#endif
 }
 
 int main(int argc, char *argv[])
 {
 	int opt;
+	int ret = EXIT_SUCCESS;
 	int terminal_mode = 0;
 
 	char *host = getenv("MCRCON_HOST");
@@ -147,8 +152,10 @@ int main(int argc, char *argv[])
 	if (!port)
 		port = "25575";
 
-	if(argc < 2 && host == NULL && pass == NULL)
+	if(argc < 2 && host == NULL && pass == NULL) {
 		usage();
+		return EXIT_FAILURE;
+	}
 
 	// default getopt error handler enabled
 	opterr = 1;
@@ -171,30 +178,31 @@ int main(int argc, char *argv[])
 			case 'r': raw_output = 1;	break;
 			case 'v':
 				puts(VER_STR"\nhttps://github.com/Tiiffi/mcrcon");
-				exit(EXIT_SUCCESS);
-			break;
+				return EXIT_SUCCESS;
 			case 'h':
-			case '?': usage();		break;
 			/*
 			  if(optopt == 'P' || optopt == 'H' || optopt == 'p')
 		    	  fprintf (stderr, "Option -%c requires an argument.\n\n", optopt);
 			  else fprintf (stderr, "Unknown option -%c\n\n", optopt);
 			*/
-
-			default: exit(EXIT_FAILURE);
+			case '?':
+				usage();
+				return EXIT_FAILURE;
+			default:
+				return EXIT_FAILURE;
 		}
 	}
 
 	if (host == NULL)
 	{
 		fputs("Host not defined (-H flag). Try 'mcrcon -h' or 'man mcrcon' for more information.\n\n", stdout);
-		return 0;
+		return EXIT_ARG_FAILURE;
 	}
 
 	if (pass == NULL)
 	{
 		fputs("Password not defined (-p flag). Try 'mcrcon -h' 'man mcrcon' for more information.\n\n", stdout);
-		return 0;
+		return EXIT_ARG_FAILURE;
 	}
 
 	if(optind == argc && terminal_mode == 0)
@@ -224,13 +232,15 @@ int main(int argc, char *argv[])
 		else
 			run_commands(argc, argv);
 	}
-	else // auth failed
+	else { // auth failed
 		fprintf(stdout, "Authentication failed!\n");
+		ret = EXIT_AUTH_FAILURE;
+	}
 
 	net_close(rsock);
 	rsock = -1;
 
-	return EXIT_SUCCESS;
+	return ret;
 }
 
 void usage(void)
@@ -264,8 +274,6 @@ void usage(void)
 	    puts("Press enter to exit.");
 	    getchar();
 	#endif
-
-	exit(EXIT_SUCCESS);
 }
 
 #ifdef _WIN32
