@@ -92,7 +92,7 @@ rc_packet*	net_recv_packet(int sd);
 int		net_clean_incoming(int sd, int size);
 
 // Misc stuff
-void		usage(void);
+void		usage(FILE *file);
 #ifndef _WIN32
 void		print_color(int color);
 #endif
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 		port = "25575";
 
 	if(argc < 2 && host == NULL && pass == NULL) {
-		usage();
+		usage(stderr);
 		return EXIT_FAILURE;
 	}
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 			  else fprintf (stderr, "Unknown option -%c\n\n", optopt);
 			*/
 			case '?':
-				usage();
+				usage(stderr);
 				return EXIT_FAILURE;
 			default:
 				return EXIT_FAILURE;
@@ -195,13 +195,13 @@ int main(int argc, char *argv[])
 
 	if (host == NULL)
 	{
-		fputs("Host not defined (-H flag). Try 'mcrcon -h' or 'man mcrcon' for more information.\n\n", stdout);
+		fputs("Host not defined (-H flag). Try 'mcrcon -h' or 'man mcrcon' for more information.\n\n", stderr);
 		return EXIT_ARG_FAILURE;
 	}
 
 	if (pass == NULL)
 	{
-		fputs("Password not defined (-p flag). Try 'mcrcon -h' 'man mcrcon' for more information.\n\n", stdout);
+		fputs("Password not defined (-p flag). Try 'mcrcon -h' 'man mcrcon' for more information.\n\n", stderr);
 		return EXIT_ARG_FAILURE;
 	}
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 			run_commands(argc, argv);
 	}
 	else { // auth failed
-		fprintf(stdout, "Authentication failed!\n");
+		fprintf(stderr, "Authentication failed!\n");
 		ret = EXIT_AUTH_FAILURE;
 	}
 
@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 	return ret;
 }
 
-void usage(void)
+void usage(FILE *file)
 {
 	fputs(
 		"Usage: "IN_NAME" [OPTIONS]... [COMMANDS]...\n\n"
@@ -262,16 +262,16 @@ void usage(void)
 		"  MCRCON_HOST\n"
 		"  MCRCON_PORT\n"
 		"  MCRCON_PASS\n\n"
-		,stdout
+		, file
 	);
 
-	puts("Command-line options will override environment variables.");
-	puts("Rcon commands with arguments must be enclosed in quotes.\n");
-	puts("Example:\n\t"IN_NAME" -H my.minecraft.server -p password \"say Server is restarting!\" save-all stop\n");
-	puts(VER_STR"\nReport bugs to tiiffi_at_gmail_dot_com or https://github.com/Tiiffi/mcrcon/issues/\n");
+	fputs("Command-line options will override environment variables.", file);
+	fputs("Rcon commands with arguments must be enclosed in quotes.\n", file);
+	fputs("Example:\n\t"IN_NAME" -H my.minecraft.server -p password \"say Server is restarting!\" save-all stop\n", file);
+	fputs(VER_STR"\nReport bugs to tiiffi_at_gmail_dot_com or https://github.com/Tiiffi/mcrcon/issues/\n", file);
 
 	#ifdef _WIN32
-	    puts("Press enter to exit.");
+	    fputs("Press enter to exit.", file);
 	    getchar();
 	#endif
 }
