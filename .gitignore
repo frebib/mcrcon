@@ -2,5 +2,8 @@
 *.o
 *.dev
 *.win
+*.txt
 *.layout
 *.project
+mcrcon
+todo
